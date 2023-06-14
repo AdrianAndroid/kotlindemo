@@ -28,15 +28,25 @@ fun traverseFolders(folderPath: String) {
         val subFolders = folder.listFiles { file -> file.isDirectory }
         subFolders?.forEach { subFolder ->
             println(subFolder.absolutePath)
-            traverseFolders(subFolder.absolutePath)
+            val filePath = subFolder.absolutePath
+            val zipFile = "${filePath}.zip"
+            zipFolder(filePath, zipFile)
+            //traverseFolders(subFolder.absolutePath)
         }
     }
 }
 
 fun zipFolder(sourceFolderPath: String, zipFilePath: String) {
+    val file = File(zipFilePath)
+    if (file.exists()) {
+        file.createNewFile()
+        setFilePermissions(zipFilePath, "755")
+    }
+
     val sourceFolder = File(sourceFolderPath)
     val outputStream = FileOutputStream(zipFilePath)
     val zipOutputStream = ZipOutputStream(outputStream)
+
 
     addFolderToZip(sourceFolder, zipOutputStream, "")
 
@@ -48,11 +58,11 @@ private fun addFolderToZip(folder: File, zipOutputStream: ZipOutputStream, paren
     val files = folder.listFiles()
     val buffer = ByteArray(1024)
 
-    for (file in files) {
+    files?.forEach { file ->
         if (file.isDirectory) {
             val filePath = if (parentFolderPath.isNotEmpty()) "$parentFolderPath/${file.name}" else file.name
             addFolderToZip(file, zipOutputStream, filePath)
-            continue
+            return@forEach
         }
 
         val fileInputStream = FileInputStream(file)
@@ -65,6 +75,16 @@ private fun addFolderToZip(folder: File, zipOutputStream: ZipOutputStream, paren
         }
 
         fileInputStream.close()
+    }
+}
+
+fun setFilePermissions(filePath: String, permissions: String) {
+    val command = "chmod $permissions $filePath"
+    try {
+        val process = Runtime.getRuntime().exec(command)
+        process.waitFor()
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
 }
 
