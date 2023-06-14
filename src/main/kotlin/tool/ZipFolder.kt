@@ -7,17 +7,18 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 fun main() {
-    val sourceDir = "/Users/apus/FlutterProjects"
+    //val sourceDir = "/Users/apus/AndroidStudioProjects"
+    val sourceDir = "/Users/apus/AndroidStudioProjects"
     traverseFolders(sourceDir)
 }
 
-fun test() {
-    val sourceFolderPath = "/path/to/source/folder"
-    val zipFilePath = "/path/to/destination/archive.zip"
-
-    zipFolder(sourceFolderPath, zipFilePath)
-    println("文件夹已成功压缩到 $zipFilePath")
-}
+//fun test() {
+//    val sourceFolderPath = "/path/to/source/folder"
+//    val zipFilePath = "/path/to/destination/archive.zip"
+//
+//    zipFolder(sourceFolderPath, zipFilePath)
+//    println("文件夹已成功压缩到 $zipFilePath")
+//}
 
 /**
  * 遍历所有文件夹
@@ -30,6 +31,16 @@ fun traverseFolders(folderPath: String) {
             println(subFolder.absolutePath)
             val filePath = subFolder.absolutePath
             val zipFile = "${filePath}.zip"
+            println("traverseFolders filePath=$filePath \t\t\t zipFile=$zipFile")
+            val file = File(zipFile)
+            if (file.exists()) {
+                println("not has this file. --> ${file.absolutePath}")
+                file.createNewFile()
+            }
+            if (!file.canWrite()) {
+                println("not has permission. ---> ${file.absolutePath}")
+                setFilePermissions(zipFile, "755")
+            }
             zipFolder(filePath, zipFile)
             //traverseFolders(subFolder.absolutePath)
         }
@@ -37,18 +48,18 @@ fun traverseFolders(folderPath: String) {
 }
 
 fun zipFolder(sourceFolderPath: String, zipFilePath: String) {
-    val file = File(zipFilePath)
-    if (file.exists()) {
-        file.createNewFile()
-        setFilePermissions(zipFilePath, "755")
-    }
-
     val sourceFolder = File(sourceFolderPath)
     val outputStream = FileOutputStream(zipFilePath)
     val zipOutputStream = ZipOutputStream(outputStream)
+    zipOutputStream.setLevel(9)
 
-
-    addFolderToZip(sourceFolder, zipOutputStream, "")
+    println("start ........")
+    runCatching {
+        addFolderToZip(sourceFolder, zipOutputStream, "")
+    }.onFailure {
+        it.printStackTrace()
+    }
+    println("end ..........")
 
     zipOutputStream.close()
     outputStream.close()
@@ -73,7 +84,6 @@ private fun addFolderToZip(folder: File, zipOutputStream: ZipOutputStream, paren
         while (fileInputStream.read(buffer).also { length = it } > 0) {
             zipOutputStream.write(buffer, 0, length)
         }
-
         fileInputStream.close()
     }
 }
